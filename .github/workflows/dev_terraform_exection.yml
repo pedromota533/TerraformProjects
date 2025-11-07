@@ -47,15 +47,11 @@ jobs:
         run: chmod +x ./scripts/terraform_execution.sh
       
       - name: Run Terraform Script
-    env:
-      DEPLOY_PLATFORM: ${{ inputs.deploy_platform }}
-      DEPLOY_TARGET: ${{ inputs.deploy_target }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ inputs.aws_region }}
-      TERRAFORM_ACTION: ${{ inputs.terraform_action }}
-
-
-
-          
+        env:
+          DEPLOY_PLATFORM: ${{ inputs.deploy_platform }}
+          DEPLOY_TARGET: ${{ inputs.deploy_target }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ inputs.aws_region }}
+          TERRAFORM_ACTION: ${{ inputs.terraform_action }}
         run: ./scripts/terraform_execution.sh
