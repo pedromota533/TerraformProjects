@@ -74,5 +74,5 @@ if [ "${TERRAFORM_ACTION}" == "apply" ]; then
     fi
     echo "OK: Terraform apply completed successfully"
 else
-    echo "OK: Terraform plan completed successfully"
+    echo "OK: Terraform plan completed successfull (NOT APPLYED)"
 fi
