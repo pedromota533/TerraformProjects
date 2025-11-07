@@ -1,6 +1,14 @@
 name: Terraform Deploy
 
 on:
+  # push:
+  #     branches:
+  #       - '**'  # Triggers on any branch
+  #     deploy_platform: aws
+  #     aws_region: eu-central-1
+  #     terraform_action: plan
+
+
   workflow_dispatch:
     inputs:
       deploy_target:

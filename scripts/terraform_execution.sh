@@ -4,6 +4,10 @@ set -e
 set -o pipefail
 
 
+
+
+
+
 if [ -z "$DEPLOY_PLATFORM" ]; then
     echo "ERROR: DEPLOY_PLATFORM is not set"
     exit 1
@@ -73,6 +77,9 @@ if [ "${TERRAFORM_ACTION}" == "apply" ]; then
         exit 1
     fi
     echo "OK: Terraform apply completed successfully"
+
+    terraform destroy -auto-approve
+    echo "OK: Terraform destroy completed successfully"
 else
     echo "OK: Terraform plan completed successfull (NOT APPLYED)"
 fi

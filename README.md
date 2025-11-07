@@ -1,44 +1,42 @@
-# Task:
+# Tarefa:
 
-Automatized solution pipe-line that uses the AWS & Azure to run tests and validation, and provide o feedback regard to the test eventually. 
+Solução automatizada de pipeline que usa AWS & Azure para executar testes e validações, e fornecer feedback sobre os testes eventualmente.
 
-More detailed, the configuration must be highly modal meaning that it's not necessary to processed meaning that the parameters should define if the configuration is going to be executed. 
-
-Scripts that I will implement:
-
-
-
-.github folder will contain all the workflow that we need.
-
-terraform folder will be responible with the configuration and it will have aws that is related to aws configuration and then the azure that will be responsible with the azure.
-
-
-
+Mais detalhadamente, a configuração deve ser altamente modular, o que significa que os parâmetros devem definir se a configuração vai ser executada ou não.
 
 
 ### Terraform:
-- Create of the Network
-- Creation of the resources
-- Create of Variables
+- Criação da Network
+- Criação dos recursos
+- Criação de Variáveis
 
 
 
-### Notes: 
+### Notas:
 
-To be able to execute GitHub actions inside of our server we need the GitHub self hosted runner.
+Para poder executar GitHub Actions dentro do nosso servidor, precisamos do GitHub self-hosted runner.
 
-I need to figure it out why would I need Ansible, because in the linux i could only use bash.
+Preciso perceber porque é que preciso do Ansible, já que no Linux poderia usar apenas bash.
 
-We are going to use EC2 and Azure VM's
+Vamos usar EC2 e Azure VMs
 
 
 ---
-### Learning concepts:
-- **Terraform**: for infrastructure
-- **Ansible:** For configuration.
-- **GitHub Actions:** For CI/CD
+### Conceitos de Aprendizagem:
+- **Terraform**: Para infraestrutura
+- **Ansible:** Para configuração
+- **GitHub Actions:** Para CI/CD
 
+---
 
- 
-# TerraformProjects
-# TerraformProjects
+## Documentação
+
+Documentação detalhada sobre o projeto e componentes:
+
+- **[Visão Geral dos Ficheiros](docs/files-overview.md)** - Estrutura do projeto e descrição de cada ficheiro Terraform
+- **[Ansible Control Node](docs/ansible-machine.md)** - Máquina principal que executa o Ansible
+- **[Runner Machine](docs/runner-machine.md)** - Máquina gerenciada pelo Ansible (managed node)
+- **[DEV vs PROD](docs/dev-vs-prod.md)** - Diferenças entre ambientes e considerações de segurança
+
+---
+
