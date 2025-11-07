@@ -4,8 +4,6 @@ set -e
 set -o pipefail
 
 
-
-
 if [ -z "$DEPLOY_PLATFORM" ]; then
     echo "ERROR: DEPLOY_PLATFORM is not set"
     exit 1

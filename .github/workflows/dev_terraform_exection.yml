@@ -33,6 +33,7 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    environment: Terraform
     
     steps:
       - name: Checkout Repository
