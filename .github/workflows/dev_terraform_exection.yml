@@ -1,22 +1,57 @@
-# This is a basic workflow to help you get started with Actions
+name: Terraform Deploy
 
-name: terraform_execution
-
-on: [push]
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Deploy Target (dev/staging/production)'
+        required: true
+        type: choice
+        options:
+          - DEV
+          - QUA
+          - PRD
+      deploy_platform:
+        description: 'Deploy Platform'
+        required: true
+        type: string
+        default: 'aws'
+      terraform_action:
+        description: 'Terraform Action'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+        default: 'plan'
+      aws_region:
+        description: 'AWS Region'
+        required: false
+        type: string
+        default: 'eu-central-1'
 
 jobs:
-  build:
+  terraform:
     runs-on: ubuntu-latest
-    container:
-      image: hashicorp/terraform:latest
-      
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      
+      - name: Make script executable
+        run: chmod +x ./scripts/terraform_execution.sh
+      
+      - name: Run Terraform Script
+        env:
+          DEPLOY_PLATFORM: ${{ inputs.deploy_platform }}
+          DEPLOY_TARGET: ${{ inputs.deploy_target }}
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ inputs.aws_region }}
+          TERRAFORM_ACTION: ${{ inputs.terraform_action }}
+        run: ./scripts/terraform_execution.sh
