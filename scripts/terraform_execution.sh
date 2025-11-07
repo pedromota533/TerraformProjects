@@ -3,6 +3,9 @@
 set -e
 set -o pipefail
 
+
+
+
 if [ -z "$DEPLOY_PLATFORM" ]; then
     echo "ERROR: DEPLOY_PLATFORM is not set"
     exit 1
@@ -13,19 +16,17 @@ if [ -z "$DEPLOY_TARGET" ]; then
     exit 1
 fi
 
-if [ -z "$AWS_ACCESS_KEY" ]; then
-    echo "ERROR: AWS_ACCESS_KEY is not set"
+if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+    echo "ERROR: AWS_ACCESS_KEY_ID is not set"
     exit 1
 fi
 
-if [ -z "$AWS_SECRET_KEY" ]; then
-    echo "ERROR: AWS_SECRET_KEY is not set"
+if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+    echo "ERROR: AWS_SECRET_ACCESS_KEY is not set"
     exit 1
 fi
 
 # Set AWS credentials
-export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY"
-export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_KEY"
 export AWS_DEFAULT_REGION="${AWS_REGION:-eu-west-1}"
 
 echo "Terraform Execution Details:"
