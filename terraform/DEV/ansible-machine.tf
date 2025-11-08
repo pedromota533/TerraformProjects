@@ -2,7 +2,8 @@
 resource "aws_instance" "ansible_control" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "t2.micro"
-  
+  key_name      = "ansible_ec2_keypare"
+
   # Usa a VPC/subnet default da região
   associate_public_ip_address = true
   
