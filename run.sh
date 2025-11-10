@@ -26,9 +26,6 @@ APPLY="$5"
 DESTROY="$6"
 
 
-
-
-
 # Validate apply and destroy values
 if [[ ! "$APPLY" =~ ^(yes|no)$ ]] || [[ ! "$DESTROY" =~ ^(yes|no)$ ]]; then
     echo "Error: 'apply' and 'destroy' must be either 'yes' or 'no'"

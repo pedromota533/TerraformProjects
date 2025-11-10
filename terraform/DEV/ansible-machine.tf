@@ -32,7 +32,6 @@ resource "aws_instance" "ansible_control" {
   }
 }
 
-# Security Group para Ansible (usa VPC default)
 resource "aws_security_group" "ansible_sg" {
   name        = "ansible-control-sg-${var.environment}"
   description = "Security group for Ansible control node"
