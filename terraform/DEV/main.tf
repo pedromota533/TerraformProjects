@@ -18,7 +18,7 @@ variable "environment" {
 variable "my_ip" {
   description = "My public IP address for SSH access"
   type        = string
-  default     = "148.63.55.136/32"
+  default     = "0.0.0.0/0"
 }
 
 # Fetch da AMI mais recente do Amazon Linux 2

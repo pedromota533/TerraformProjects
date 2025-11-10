@@ -2,37 +2,40 @@
 resource "aws_instance" "ansible_control" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "t2.micro"
-  key_name      = "ansible_ec2_keypare"
 
-  # Usa a VPC/subnet default da região
+
+  subnet_id     = aws_subnet.main_subnet.id
+
+  key_name      = "aws_permision_file_work"
+
+  # usa a vpc/subnet default da região
   associate_public_ip_address = true
   
-  # Security group
+  # security group
   vpc_security_group_ids = [aws_security_group.ansible_sg.id]
   
-  # User data para instalar Ansible
-  user_data = <<-EOF
+  # user data para instalar ansible
+  user_data = <<-eof
     #!/bin/bash
     yum update -y
     amazon-linux-extras install ansible2 -y
 
-    # Setup ansible user (from script)
+    # setup ansible user (from script)
     ${file("${path.module}/../../scripts/ansible-control/setup-user.sh")}
-  EOF
+  eof
   
   tags = {
-    Name        = "Ansible-Control-${var.environment}"
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Role        = "Ansible-Control"
+    name        = "ansible-control-${var.environment}"
+    environment = var.environment
+    managedby   = "terraform"
+    role        = "ansible-control"
   }
 }
 
-# Security Group para Ansible (usa VPC default)
 resource "aws_security_group" "ansible_sg" {
   name        = "ansible-control-sg-${var.environment}"
   description = "Security group for Ansible control node"
-  
+  vpc_id = aws_vpc.main_vpc.id
   # SSH access apenas do teu IP
   ingress {
     from_port   = 22
