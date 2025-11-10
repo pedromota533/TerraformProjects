@@ -3,20 +3,32 @@
 ## Estrutura do Projeto
 
 ```
-TerraformProjects/
+AutomaticTask/
 ├── terraform/
 │   └── DEV/
-│       ├── terraform.tf          # Configuração do Terraform e providers
-│       ├── main.tf               # Provider AWS, variáveis e AMI data source
-│       ├── ansible-machine.tf    # Ansible Control Node
-│       └── runner-machine.tf     # Runner/Managed Machine
-├── scripts/                      # Scripts modulares para configuração
+│       ├── terraform.tf             # Configuração do Terraform e providers
+│       ├── main.tf                  # Provider AWS, variáveis e AMI data source
+│       ├── sub_net_enviroment.tf    # VPC, Subnet, Internet Gateway, Route Tables
+│       ├── ansible-machine.tf       # Ansible Control Node
+│       ├── runner-machine.tf        # Runner/Managed Machine
+│       ├── ansible-integration.tf   # Geração do inventory Ansible
+│       └── ansible-tasks.tf         # Execução de playbooks Ansible
+├── scripts/                         # Scripts modulares para configuração
 │   ├── ansible-control/
-│   │   └── setup-user.sh         # Setup do user ansible (sudo restrito)
-│   └── runner/
-│       └── setup-user.sh         # Setup do user ansible (sudo completo)
-├── docs/                         # Documentação
-└── README.md                     # Visão geral do projeto
+│   │   ├── setup-user.sh            # Setup do user ansible (sudo restrito)
+│   │   └── testing_script_file.sh   # Script de teste para logging
+│   ├── runner/
+│   │   └── setup-user.sh            # Setup do user ansible (sudo completo)
+│   └── terraform_execution.sh       # Script de execução do Terraform
+├── template_files/                  # Templates para geração dinâmica
+│   └── ansible_machine/
+│       ├── inventory.tpl            # Template do inventory Ansible
+│       └── setup_logger.yml.tpl     # Template do playbook Ansible
+├── ansible-playbooks/               # Playbooks Ansible gerados (não versionados)
+│   ├── inventory.ini                # Gerado por Terraform
+│   └── setup_logger.yml             # Gerado por Terraform
+├── docs/                            # Documentação
+└── README.md                        # Visão geral do projeto
 ```
 
 ## Ficheiros Terraform
@@ -147,72 +159,154 @@ output "ami_info" {
 **Propósito**: Define a Runner/Managed Machine que será gerida pelo Ansible.
 
 **Recursos criados**:
-1. **`aws_instance.machine_runner`**: Instância EC2 da Runner Machine
+1. **`aws_security_group.runner_sg`**: Security Group para o Runner
+2. **`aws_instance.machine_runner`**: Instância EC2 da Runner Machine
 
-**Status**:
-- ✅ Instância definida
-- ✅ User data configurado
-- ⚠️ **Faltam**: Tags, Security Group (`runner_sg`), Outputs
+**Outputs**:
+- `runner_private_ip`
+- `runner_instance_id`
 
 **Documentação detalhada**: Ver [runner-machine.md](./runner-machine.md)
 
 ---
 
+### 5. `sub_net_enviroment.tf`
+
+**Localização**: `terraform/DEV/sub_net_enviroment.tf`
+
+**Propósito**: Define toda a infraestrutura de rede (VPC, Subnet, Internet Gateway, Route Tables).
+
+**Recursos criados**:
+1. **`aws_vpc.main_vpc`**: VPC principal (10.0.0.0/24)
+2. **`aws_subnet.main_subnet`**: Subnet principal (10.0.0.0/24)
+3. **`aws_internet_gateway.main_igw`**: Internet Gateway para acesso externo
+4. **`aws_route_table.main_rt`**: Route Table com route para Internet
+5. **`aws_route_table_association.main_rta`**: Associação da Route Table à Subnet
+
+**Características**:
+- ✅ VPC isolada para o projeto
+- ✅ Subnet única para todas as instâncias
+- ✅ Comunicação interna via IPs privados
+- ✅ Acesso à Internet via Internet Gateway
+
+**Documentação detalhada**: Ver [networking.md](./networking.md)
+
+---
+
+### 6. `ansible-integration.tf`
+
+**Localização**: `terraform/DEV/ansible-integration.tf`
+
+**Propósito**: Gerar dinamicamente o inventory do Ansible com os IPs das instâncias.
+
+**Recursos criados**:
+1. **`local_file.ansible_inventory`**: Gera `ansible-playbooks/inventory.ini` a partir do template
+
+**Template usado**: `template_files/ansible_machine/inventory.tpl`
+
+**Variáveis injetadas**:
+- `runner_private_ip`: IP privado do Runner
+- `ansible_private_ip`: IP privado do Ansible Control
+
+**Output**:
+- `ansible_inventory_location`: Caminho absoluto para o inventory gerado
+
+**Documentação detalhada**: Ver [ansible-integration.md](./ansible-integration.md)
+
+---
+
+### 7. `ansible-tasks.tf`
+
+**Localização**: `terraform/DEV/ansible-tasks.tf`
+
+**Propósito**: Automatizar a cópia de ficheiros e execução de playbooks Ansible.
+
+**Recursos criados**:
+1. **`local_file.ansible_playbook`**: Gera `ansible-playbooks/setup_logger.yml` a partir do template
+2. **`null_resource.copy_ansible_files`**: Executa provisioner para:
+   - Copiar SSH key para o Ansible Control Node
+   - Copiar inventory e playbooks
+   - Executar playbooks Ansible automaticamente
+
+**Template usado**: `template_files/ansible_machine/setup_logger.yml.tpl`
+
+**Passos executados**:
+1. Aguardar 60 segundos
+2. Criar diretório `.ssh` no Ansible Control
+3. Copiar SSH key
+4. Adicionar Runner aos known_hosts
+5. Copiar inventory.ini
+6. Copiar playbook
+7. Copiar script de teste
+8. Executar playbook Ansible
+
+**Documentação detalhada**: Ver [ansible-integration.md](./ansible-integration.md)
+
+---
+
 ## Scripts de Configuração
 
-Os scripts modulares em `scripts/` são usados pelos ficheiros Terraform para configurar os users nas instâncias EC2.
+Os scripts modulares em `scripts/` são usados pelos ficheiros Terraform para configurar os users nas instâncias EC2 e para automação.
 
 ### 1. `scripts/ansible-control/setup-user.sh`
 
-**Propósito**: Configura o user `ansible` no Ansible Control Node com sudo **restrito**.
+**Propósito**: Configura o user `ansible` no Ansible Control Node com sudo **restrito** e SSH access.
 
-**Conteúdo**:
-```bash
-#!/bin/bash
-# Setup user for Ansible Control Node
-
-# Create ansible user
-useradd -m -s /bin/bash ansible
-
-# Sudo apenas para comandos Ansible
-echo "ansible ALL=(ALL) NOPASSWD: /usr/bin/ansible, /usr/bin/ansible-playbook, /usr/bin/ansible-pull, /usr/bin/ansible-galaxy, /usr/bin/ansible-vault" >> /etc/sudoers.d/ansible
-
-chmod 0440 /etc/sudoers.d/ansible
-```
-
-**O que faz**:
+**Principais funcionalidades**:
 - Cria o user `ansible`
+- Configura SSH access (copia authorized_keys do ec2-user)
 - Configura sudo **apenas** para comandos Ansible (segurança)
-- Define permissões corretas no ficheiro sudoers
 
 **Usado por**: `ansible-machine.tf` via `file()` function
 
 ---
 
-### 2. `scripts/runner/setup-user.sh`
+### 2. `scripts/ansible-control/testing_script_file.sh`
+
+**Propósito**: Script de teste para logging usado pelo Ansible playbook.
+
+**Principais funcionalidades**:
+- Escreve mensagens de log com timestamp
+- Usado para testar a integração Ansible
+- Executado no Runner a cada 5 segundos via systemd timer
+
+**Usado por**:
+- Copiado via `ansible-tasks.tf`
+- Executado no Runner via Ansible playbook
+
+---
+
+### 3. `scripts/runner/setup-user.sh`
 
 **Propósito**: Configura o user `ansible` na Runner Machine com sudo **completo**.
 
-**Conteúdo**:
-```bash
-#!/bin/bash
-# Setup user for Runner Machine (Managed Node)
-
-# Create ansible user
-useradd -m -s /bin/bash ansible
-
-# Sudo completo (sem password)
-echo "ansible ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/ansible
-
-chmod 0440 /etc/sudoers.d/ansible
-```
-
-**O que faz**:
+**Principais funcionalidades**:
 - Cria o user `ansible`
 - Configura sudo **completo** para permitir gestão total via Ansible
-- Define permissões corretas no ficheiro sudoers
 
 **Usado por**: `runner-machine.tf` via `file()` function
+
+---
+
+### 4. `scripts/terraform_execution.sh`
+
+**Propósito**: Script wrapper para executar Terraform com validações e controle de fluxo.
+
+**Parâmetros**:
+1. AWS_ACCESS_KEY_ID
+2. AWS_SECRET_ACCESS_KEY
+3. DEPLOY_TARGET (DEV/PROD)
+4. DEPLOY_PLATFORM (AWS/Azure)
+5. TERRAFORM_ACTION (plan/apply)
+6. DESTROY_ACTION (yes/no)
+
+**Principais funcionalidades**:
+- Valida todos os parâmetros
+- Configura ambiente AWS
+- Executa Terraform com opções de destroy
+- Tratamento de erros robusto
+
+**Documentação detalhada**: Ver [scripts.md](./scripts.md)
 
 ---
 
@@ -226,14 +320,65 @@ chmod 0440 /etc/sudoers.d/ansible
 
 ---
 
+## Template Files
+
+Os templates em `template_files/` são usados para gerar ficheiros dinâmicos com valores substituídos pelo Terraform.
+
+### 1. `template_files/ansible_machine/inventory.tpl`
+
+**Propósito**: Template para gerar o inventory do Ansible com IPs dinâmicos.
+
+**Variáveis substituídas**:
+- `${runner_private_ip}`: IP privado da Runner Machine
+- `${ansible_private_ip}`: IP privado do Ansible Control Node
+
+**Ficheiro gerado**: `ansible-playbooks/inventory.ini`
+
+**Usado por**: `ansible-integration.tf`
+
+---
+
+### 2. `template_files/ansible_machine/setup_logger.yml.tpl`
+
+**Propósito**: Template para gerar o playbook Ansible que configura logging no Runner.
+
+**Variáveis substituídas**: Nenhuma (template estático)
+
+**Ficheiro gerado**: `ansible-playbooks/setup_logger.yml`
+
+**O que o playbook faz**:
+1. Copia script de logging para o Runner
+2. Cria systemd service e timer
+3. Configura execução automática a cada 5 segundos
+
+**Usado por**: `ansible-tasks.tf`
+
+**Documentação detalhada**: Ver [template-files.md](./template-files.md)
+
+---
+
 ## Ordem de Execução
 
 Quando executas `terraform apply`, os recursos são criados nesta ordem:
 
-1. **Data Source** (`aws_ami.amazon_linux`) - Busca a AMI
-2. **Security Groups** (`ansible_sg`, `runner_sg`) - Criados primeiro (sem dependências)
-3. **EC2 Instances** (`ansible_control`, `machine_runner`) - Dependem dos Security Groups
-4. **Outputs** - Mostrados no final
+1. **Data Source** (`aws_ami.amazon_linux`) - Busca a AMI mais recente
+2. **Networking** - Infraestrutura de rede
+   - VPC (`main_vpc`)
+   - Subnet (`main_subnet`)
+   - Internet Gateway (`main_igw`)
+   - Route Table (`main_rt`)
+   - Route Table Association (`main_rta`)
+3. **Security Groups** (`ansible_sg`, `runner_sg`) - Dependem da VPC
+4. **EC2 Instances** - Dependem de Security Groups e Subnet
+   - Ansible Control Node (`ansible_control`)
+   - Runner Machine (`machine_runner`)
+5. **Local Files** - Geração de inventory e playbooks
+   - `ansible_inventory` (depende das instâncias)
+   - `ansible_playbook`
+6. **Provisioning** - Execução de tarefas Ansible
+   - `copy_ansible_files` (depende de tudo anterior)
+   - Copia ficheiros e executa playbooks
+7. **Outputs** - Mostrados no final
 
 ## Comandos Terraform Úteis
 
@@ -321,24 +466,30 @@ terraform/DEV/
   tfplan
   ```
 
-## Próximos Passos
+## Estado Atual do Projeto
 
-Para completar o projeto:
+### Completo ✅
+1. **Infraestrutura de Rede**:
+   - ✅ VPC com subnet isolada
+   - ✅ Internet Gateway configurado
+   - ✅ Route Tables configuradas
 
-1. **runner-machine.tf**:
-   - [ ] Adicionar tags à instância
-   - [ ] Criar `aws_security_group.runner_sg`
-   - [ ] Adicionar outputs (IPs, instance ID)
+2. **Instâncias EC2**:
+   - ✅ Ansible Control Node com tags e security groups
+   - ✅ Runner Machine com tags, security groups e outputs
+   - ✅ User data configurado em ambas
 
-2. **Organização**:
-   - [ ] Considerar criar `variables.tf` separado
-   - [ ] Considerar criar `outputs.tf` separado
-   - [ ] Adicionar `.gitignore` apropriado
+3. **Integração Terraform-Ansible**:
+   - ✅ Geração automática de inventory
+   - ✅ Geração de playbooks a partir de templates
+   - ✅ Execução automática de playbooks
 
-3. **Segurança**:
-   - [ ] Usar AWS Secrets Manager para credenciais
-   - [ ] Implementar backend remoto (S3 + DynamoDB) para state
-   - [ ] Adicionar encryption ao state
+4. **Scripts e Templates**:
+   - ✅ Scripts modulares organizados
+   - ✅ Templates para geração dinâmica
+   - ✅ Script de execução do Terraform
+
+**Nota**: Para melhorias futuras, consultar `todo.md` na raiz do projeto.
 
 ## Troubleshooting
 

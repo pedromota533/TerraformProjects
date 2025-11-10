@@ -17,10 +17,10 @@ A **Runner Machine** é uma máquina gerenciada (managed node) que será control
 - **Security Group**: `aws_security_group.runner_sg`
 
 ### Status Atual
-- **User data**: Configurado
-- **Tags**: A adicionar
-- **Security Group**: A criar
-- **Outputs**: A adicionar
+- ✅ **User data**: Configurado
+- ✅ **Tags**: Configuradas
+- ✅ **Security Group**: Criado (`runner_sg`)
+- ✅ **Outputs**: Configurados (`runner_private_ip`, `runner_instance_id`)
 
 ## User Data (Inicialização)
 
@@ -57,19 +57,25 @@ chmod 0440 /etc/sudoers.d/ansible
 3. **Sudo COMPLETO**: O user `ansible` tem sudo **COMPLETO** para executar qualquer tarefa
 4. **Sem Root SSH**: Root SSH está **sempre desativado** (configuração segura por defeito)
 
-## Security Group (runner_sg) - A Criar
+## Security Group (runner_sg)
 
-### Regras de Ingress (Entrada) Recomendadas
-- **SSH (porta 22) - Do teu IP**:
-  - Origem: `var.my_ip`
-  - Descrição: "SSH access from Pedros IP"
-
-- **SSH (porta 22) - Do Ansible Control Node**:
+### Regras de Ingress (Entrada)
+- **Todo o tráfego do Ansible Control Node**:
+  - Protocolo: `-1` (todos)
   - Origem: `aws_security_group.ansible_sg.id`
-  - Descrição: "SSH access from Ansible control node"
+  - Descrição: "All traffic from Ansible control node"
+  - **Portas**: Todas (0 a 0)
+
+**Importante**: O Runner **apenas** aceita tráfego do Ansible Control Node, não do teu IP diretamente. Isto é mais seguro pois o Runner não está exposto à Internet diretamente.
 
 ### Regras de Egress (Saída)
 - **Todo o tráfego**: Permitido para qualquer destino (`0.0.0.0/0`)
+
+### Tags
+- `Name`: `runner-sg-${var.environment}`
+- `Environment`: Valor da variável `environment`
+- `ManagedBy`: `Terraform`
+- `Role`: `Ansible-Managed`
 
 ## Como o Ansible se Conecta
 
@@ -89,13 +95,20 @@ runner1 ansible_host=<runner_public_ip> ansible_user=ansible
 ansible_ssh_private_key_file=~/.ssh/id_rsa
 ```
 
-## Outputs - A Adicionar
+## Outputs
 
-Outputs recomendados:
+Após o deployment, os seguintes valores são disponibilizados:
 
 - **`runner_instance_id`**: ID da instância EC2
-- **`runner_public_ip`**: IP público da máquina
-- **`runner_private_ip`**: IP privado da máquina
+- **`runner_private_ip`**: IP privado da máquina (usado pelo Ansible)
+
+**Nota**: Não há output para IP público, embora a instância tenha um. O IP privado é usado para comunicação com o Ansible Control Node.
+
+### Como ver os outputs:
+```bash
+terraform output
+terraform output runner_private_ip
+```
 
 ## Como Conectar
 
@@ -109,19 +122,12 @@ ssh ansible@<runner_public_ip>
 
 **Nota**: Root SSH está **sempre desativado** (não é possível fazer `ssh root@...`)
 
-## Próximos Passos
-
-Para completar a configuração da Runner Machine:
-
-1. **Adicionar Tags** ao recurso `aws_instance.machine_runner`
-2. **Criar Security Group** `runner_sg` com as regras acima
-3. **Adicionar Outputs** para visualizar IPs e ID da instância
-4. **Configurar SSH Keys** para comunicação entre Ansible Control e Runner
-
 ## Notas de Segurança
 
 - ✅ Root SSH está **sempre desativado** (configuração segura)
-- ✅ O runner aceita conexões SSH do teu IP **e** do Ansible Control Node
+- ✅ O runner **apenas** aceita conexões do Ansible Control Node (não do teu IP diretamente)
+- ✅ Comunicação via IPs privados dentro da VPC (mais seguro)
 - ✅ O user `ansible` tem sudo **COMPLETO** para permitir gestão completa via Ansible
 - ✅ Scripts modulares em `scripts/runner/` para fácil manutenção
 - ⚠️ User `ansible` tem privilégios elevados - protege bem as SSH keys!
+- ℹ️ Para aceder ao Runner, conecta primeiro ao Ansible Control e depois salta para o Runner
