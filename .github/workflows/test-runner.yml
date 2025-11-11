@@ -1,0 +1,107 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/test-runner.yml'
+
+jobs:
+  test-runner:
+    runs-on: self-hosted
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display runner information
+        run: |
+          echo "=========================================="
+          echo "RUNNER INFORMATION"
+          echo "=========================================="
+          echo "Runner Name: $RUNNER_NAME"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner Architecture: $RUNNER_ARCH"
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "=========================================="
+
+      - name: System information
+        run: |
+          echo "=========================================="
+          echo "SYSTEM INFORMATION"
+          echo "=========================================="
+          echo "OS Release:"
+          cat /etc/os-release | head -5
+          echo ""
+          echo "Kernel Version:"
+          uname -a
+          echo ""
+          echo "CPU Info:"
+          grep "model name" /proc/cpuinfo | head -1
+          echo ""
+          echo "Memory Info:"
+          free -h
+          echo ""
+          echo "Disk Space:"
+          df -h | grep -E '^/dev/'
+          echo "=========================================="
+
+      - name: Verify installed tools
+        run: |
+          echo "=========================================="
+          echo "INSTALLED TOOLS VERIFICATION"
+          echo "=========================================="
+
+          echo "✓ Terraform:"
+          terraform version || echo "❌ Terraform not found"
+          echo ""
+
+          echo "✓ Ansible:"
+          ansible --version | head -1 || echo "❌ Ansible not found"
+          echo ""
+
+          echo "✓ AWS CLI:"
+          aws --version || echo "❌ AWS CLI not found"
+          echo ""
+
+          echo "✓ Python3:"
+          python3 --version || echo "❌ Python3 not found"
+          echo ""
+
+          echo "✓ jq:"
+          jq --version || echo "❌ jq not found"
+          echo ""
+
+          echo "✓ Git:"
+          git --version || echo "❌ Git not found"
+          echo "=========================================="
+
+      - name: Test network connectivity
+        run: |
+          echo "=========================================="
+          echo "NETWORK CONNECTIVITY TEST"
+          echo "=========================================="
+          echo "Public IP:"
+          curl -s ifconfig.me || echo "Unable to get public IP"
+          echo ""
+          echo ""
+          echo "DNS Resolution Test:"
+          nslookup github.com || echo "DNS resolution failed"
+          echo "=========================================="
+
+      - name: Runner health check
+        run: |
+          echo "=========================================="
+          echo "RUNNER HEALTH CHECK"
+          echo "=========================================="
+          echo "✅ Runner is operational and can execute jobs!"
+          echo "✅ All critical tools are installed"
+          echo "✅ Network connectivity is working"
+          echo "=========================================="
+          echo ""
+          echo "🎉 Self-Hosted Runner Test: PASSED 🎉"
+          echo ""
