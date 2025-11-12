@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -e  # Exit on error
+
+INVENTORY_LOCATION="../config/config.ini"
+
+echo "==> Validating configuration..."
+
+# Check if config.ini exists
+if [ ! -f "$INVENTORY_LOCATION" ]; then
+    echo "ERROR: Configuration file not found at $INVENTORY_LOCATION"
+    echo "Please run Terraform to generate the configuration first."
+    exit 1
+fi
+
+# Check if github_runner_token is set
+TOKEN=$(grep "^github_runner_token=" "$INVENTORY_LOCATION" | cut -d'=' -f2 | tr -d '[:space:]')
+
+if [ -z "$TOKEN" ]; then
+    echo "ERROR: github_runner_token is empty in $INVENTORY_LOCATION"
+    echo "Please set the GitHub runner token before running the playbook."
+    exit 2
+fi
+
+echo "✓ Configuration validated"
+
+# Check if python3 is installed
+if ! command -v python3 &> /dev/null; then
+    echo "ERROR: python3 is not installed"
+    exit 3
+fi
+
+echo "==> Setting up Python environment..."
+
+# Setup virtual environment
+if [ ! -d ".venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv .venv || { echo "ERROR: Failed to create virtual environment"; exit 4; }
+
+    source ./.venv/bin/activate || { echo "ERROR: Failed to activate virtual environment"; exit 5; }
+
+    echo "Installing Ansible..."
+    pip install ansible > /dev/null || { echo "ERROR: Failed to install Ansible"; exit 6; }
+
+    if [ -f "requirements.txt" ]; then
+        echo "Installing additional requirements..."
+        pip install -r requirements.txt > /dev/null
+    else
+        pip freeze > requirements.txt
+    fi
+else
+    source ./.venv/bin/activate || { echo "ERROR: Failed to activate virtual environment"; exit 5; }
+
+    # Verify ansible-playbook is available
+    if ! command -v ansible-playbook &> /dev/null; then
+        echo "Installing Ansible..."
+        pip install ansible > /dev/null || { echo "ERROR: Failed to install Ansible"; exit 6; }
+    fi
+fi
+
+echo "✓ Python environment ready"
+echo ""
+echo "==> Running Ansible playbook..."
+echo ""
+
+# Run the playbook
+ansible-playbook -i "$INVENTORY_LOCATION" ./run-scripts.yml
+PLAYBOOK_EXIT=$?
+
+echo ""
+if [ $PLAYBOOK_EXIT -eq 0 ]; then
+    echo "==> ✓ Ansible playbook completed successfully"
+    exit 0
+else
+    echo "==> ✗ Ansible playbook failed with exit code $PLAYBOOK_EXIT"
+    exit $PLAYBOOK_EXIT
+fi
+

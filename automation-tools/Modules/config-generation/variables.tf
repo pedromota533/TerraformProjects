@@ -1,25 +1,20 @@
-# Root variables - used by both modules
-
-# EC2 Infrastructure variables
-variable "number_of_machines" {
-  description = "The number of EC2 instances to create"
-  type        = number
-  default     = 1
+# Inputs recebidos do módulo ec2-creation
+variable "runner_public_ips" {
+  description = "Lista de IPs públicos dos runners"
+  type        = list(string)
 }
 
-variable "ec2_region" {
-  description = "AWS Region"
+variable "key_pair_name" {
+  description = "Nome do key pair AWS"
   type        = string
-  default     = "eu-central-1"
 }
 
-variable "github_token" {
-  description = "GitHub Runner Registration Token"
+variable "ansible_ssh_key_path" {
+  description = "Path to SSH private key file for Ansible"
   type        = string
-  sensitive   = true
+  default     = "~/.ssh/aws_permision_file_work.pem"
 }
 
-# Ansible Configuration
 variable "ansible_user" {
   description = "SSH user for Ansible connections"
   type        = string
@@ -32,11 +27,18 @@ variable "ansible_python_interpreter" {
   default     = "/usr/bin/python3"
 }
 
-# GitHub Runner Configuration
+# GitHub Runner Configuration Variables
 variable "github_repo_url" {
   description = "GitHub repository URL for the runner"
   type        = string
   default     = "https://github.com/pedromota533/TerraformProjects"
+}
+
+variable "github_runner_token" {
+  description = "GitHub runner registration token (sensitive)"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "github_runner_version" {

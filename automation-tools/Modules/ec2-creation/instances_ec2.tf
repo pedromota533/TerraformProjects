@@ -18,7 +18,7 @@ locals {
 resource "aws_instance" "runner" {
   count = var.number_of_machines
 
-  ami                    = data.aws_ami.amazon_linux.id
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.runner.id]
@@ -31,18 +31,3 @@ resource "aws_instance" "runner" {
   }
 }
 
-# Output individual IPs
-output "runner_public_ips" {
-  description = "Public IP addresses of runner instances"
-  value       = aws_instance.runner[*].public_ip
-}
-
-output "runner_private_ips" {
-  description = "Private IP addresses of runner instances"
-  value       = aws_instance.runner[*].private_ip
-}
-
-output "runner_instance_ids" {
-  description = "Instance IDs of runners"
-  value       = aws_instance.runner[*].id
-}

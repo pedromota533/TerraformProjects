@@ -8,7 +8,7 @@ set -euo pipefail
 # Only runs if REMOVE_RUNNER=true is set
 # ============================================================================
 
-RUNNER_DIR="${RUNNER_DIR:-/home/ec2-user/actions-runner}"
+RUNNER_DIR="${RUNNER_DIR:-$HOME/actions-runner}"
 RUNNER_TOKEN="${RUNNER_TOKEN:-}"
 REMOVE_RUNNER="${REMOVE_RUNNER:-false}"
 

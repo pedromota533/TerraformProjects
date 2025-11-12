@@ -9,13 +9,13 @@ set -euo pipefail
 echo "Installing GitHub Runner Dependencies..."
 
 # Update system packages
-sudo yum update -y -q >/dev/null 2>&1
+sudo apt-get update -y -q >/dev/null 2>&1
 
 # Install essential tools quietly
-sudo yum install -y -q curl tar git coreutils >/dev/null 2>&1
+sudo apt-get install -y -q curl tar git coreutils >/dev/null 2>&1
 
 # Install additional useful tools (optional, don't fail if unavailable)
-sudo yum install -y -q jq wget unzip >/dev/null 2>&1 || true
+sudo apt-get install -y -q jq wget unzip >/dev/null 2>&1 || true
 
 # Verify critical commands
 commands_to_check=(curl tar git sha256sum)

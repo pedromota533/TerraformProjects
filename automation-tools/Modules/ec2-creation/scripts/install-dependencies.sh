@@ -6,7 +6,7 @@ set -euo pipefail
 # Dependency Installation Script for GitHub Actions Runner
 # ============================================================================
 # This script installs all required dependencies for setting up
-# GitHub Actions self-hosted runners on Amazon Linux 2
+# GitHub Actions self-hosted runners on Ubuntu 22.04
 # ============================================================================
 
 echo "=========================================="
@@ -16,19 +16,19 @@ echo ""
 
 # Update system packages
 echo "[1/4] Updating system packages..."
-sudo yum update -y -q
+apt-get update -y -q
 
 # Install essential tools
 echo "[2/4] Installing essential tools (curl, tar, git)..."
-sudo yum install -y curl tar git
+apt-get install -y curl tar git
 
 # Install coreutils (includes sha256sum)
 echo "[3/4] Installing coreutils for hash validation..."
-sudo yum install -y coreutils
+apt-get install -y coreutils
 
 # Install additional useful tools
 echo "[4/4] Installing additional tools (jq, wget, unzip)..."
-sudo yum install -y jq wget unzip || true
+apt-get install -y jq wget unzip || true
 
 echo ""
 echo "=========================================="

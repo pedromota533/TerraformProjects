@@ -3,7 +3,7 @@
 variable "number_of_machines" {
     description = "The number of instance ec2 that the terraform is going to create"
     type = number
-    default = 5
+    default = 1
 }
 
 variable "ec2_region" {

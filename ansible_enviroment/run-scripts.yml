@@ -49,7 +49,7 @@
         group: "{{ ansible_user }}"
         mode: '0755'
 
-    - name: Execute application setup scripts (as ec2-user)
+    - name: Execute application setup scripts (as ansible_user)
       shell: "/tmp/ansible_scripts/{{ item.path | basename }}"
       loop: "{{ local_scripts.files }}"
       when:

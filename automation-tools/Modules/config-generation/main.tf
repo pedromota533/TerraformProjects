@@ -1,15 +1,24 @@
+# Ensure config directory exists
+resource "null_resource" "create_config_dir" {
+  provisioner "local-exec" {
+    command = "mkdir -p ${path.root}/../config"
+  }
+}
+
 resource "local_file" "config_ini" {
-  filename = "${path.module}/../config/config.ini"
+  depends_on = [null_resource.create_config_dir]
+
+  filename = "${path.root}/../config/config.ini"
 
   content = <<-EOT
 [runners]
 # Individual IPs (one per line)
-%{for idx, ip in local.runner_public_ips~}
+%{for idx, ip in var.runner_public_ips~}
 ${ip}
 %{endfor~}
 
 [runners:vars]
-ansible_ssh_private_key_file=~/.ssh/${local.key_pair_name}.pem
+ansible_ssh_private_key_file=~/.ssh/${var.key_pair_name}.pem
 ansible_user=${var.ansible_user}
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ansible_python_interpreter=${var.ansible_python_interpreter}

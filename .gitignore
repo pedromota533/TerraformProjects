@@ -5,6 +5,8 @@
 .terraform/
 .terraform.lock.hcl
 tfplan
+venv*
+logs*
 
 # Generated infrastructure files
 output_info.json
@@ -36,3 +38,10 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+
+#python
+.venv
+
+
+*json
