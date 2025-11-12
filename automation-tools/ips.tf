@@ -6,10 +6,11 @@ data "terraform_remote_state" "runners" {
   }
 }
 
-# Extract IPs into local variables for easy access
+# Extract IPs and key pair info into local variables for easy access
 locals {
   runner_public_ips  = data.terraform_remote_state.runners.outputs.runner_public_ips
   runner_private_ips = data.terraform_remote_state.runners.outputs.runner_private_ips
+  key_pair_name      = data.terraform_remote_state.runners.outputs.key_pair_name
 }
 
 # Output them so you can see them after terraform apply

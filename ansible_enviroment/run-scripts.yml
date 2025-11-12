@@ -1,0 +1,122 @@
+---
+- name: Execute all setup scripts on runners
+  hosts: runners
+  become: yes
+
+  vars:
+    # Runner name is derived from the inventory hostname
+    github_runner_name: "{{ inventory_hostname }}-runner"
+    # Set to true to remove runners instead of installing
+    remove_runner: false
+
+  tasks:
+    - name: "Find all shell scripts in local scripts directory"
+      local_action:
+        module: find
+        paths: "{{ playbook_dir }}/scripts"
+        patterns: "*.sh"
+      register: local_scripts
+      run_once: true
+      become: no
+
+    - name: Create remote scripts directory
+      file:
+        path: /tmp/ansible_scripts
+        state: directory
+        mode: '0755'
+
+    - name: Copy scripts to remote hosts
+      copy:
+        src: "{{ item.path }}"
+        dest: "/tmp/ansible_scripts/{{ item.path | basename }}"
+        mode: '0755'
+      loop: "{{ local_scripts.files }}"
+      when: local_scripts.files | length > 0
+
+    - name: Execute dependency installation scripts (as root)
+      shell: "/tmp/ansible_scripts/{{ item.path | basename }}"
+      loop: "{{ local_scripts.files }}"
+      when:
+        - local_scripts.files | length > 0
+        - item.path | basename is match('^0[0-9]-.*')
+      register: dependency_results
+
+    - name: Create runner directory with correct ownership
+      file:
+        path: "/home/{{ ansible_user }}/actions-runner"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Execute application setup scripts (as ec2-user)
+      shell: "/tmp/ansible_scripts/{{ item.path | basename }}"
+      loop: "{{ local_scripts.files }}"
+      when:
+        - local_scripts.files | length > 0
+        - item.path | basename is match('^[1-9][0-9]-.*')
+      become: no
+      become_user: "{{ ansible_user }}"
+      environment:
+        REPO_URL: "{{ github_repo_url }}"
+        RUNNER_TOKEN: "{{ github_runner_token }}"
+        RUNNER_VERSION: "{{ github_runner_version }}"
+        RUNNER_DIR: "{{ github_runner_dir }}"
+        RUNNER_NAME: "{{ github_runner_name }}"
+        RUNNER_LABELS: "{{ github_runner_labels }}"
+        REMOVE_RUNNER: "{{ remove_runner | string }}"
+      register: script_results
+
+    - name: Create local logs directory
+      file:
+        path: "{{ playbook_dir }}/logs"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      become: no
+      run_once: true
+
+    - name: Save dependency script output to local files
+      copy:
+        content: |
+          STDOUT:
+          {{ item.stdout }}
+
+          STDERR:
+          {{ item.stderr }}
+
+          Return Code: {{ item.rc }}
+        dest: "{{ playbook_dir }}/logs/{{ inventory_hostname }}_{{ item.item.path | basename }}{% if item.rc != 0 %}_FAILED{% endif %}.log"
+      delegate_to: localhost
+      become: no
+      loop: "{{ dependency_results.results }}"
+      when:
+        - dependency_results is defined
+        - dependency_results.results | length > 0
+        - item.skipped is not defined or not item.skipped
+        - item.rc is defined
+
+    - name: Save application script output to local files
+      copy:
+        content: |
+          STDOUT:
+          {{ item.stdout }}
+
+          STDERR:
+          {{ item.stderr }}
+
+          Return Code: {{ item.rc }}
+        dest: "{{ playbook_dir }}/logs/{{ inventory_hostname }}_{{ item.item.path | basename }}{% if item.rc != 0 %}_FAILED{% endif %}.log"
+      delegate_to: localhost
+      become: no
+      loop: "{{ script_results.results }}"
+      when:
+        - script_results is defined
+        - script_results.results | length > 0
+        - item.skipped is not defined or not item.skipped
+        - item.rc is defined
+
+    - name: Cleanup remote scripts directory
+      file:
+        path: /tmp/ansible_scripts
+        state: absent
