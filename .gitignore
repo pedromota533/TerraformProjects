@@ -1,1 +1,38 @@
-ignore_*
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+tfplan
+
+# Generated infrastructure files
+output_info.json
+infrastructure-data.json
+config.ini
+
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Environment and credentials
+.env
+.env.*
+*credentials*
+
+# Generated Ansible files
+*.ini
+!.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

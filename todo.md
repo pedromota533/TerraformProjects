@@ -1,5 +1,60 @@
 # TODO - Melhorias Futuras
 
+
+
+
+
+
+
+
+
+## Lista de afazeres relativo a arquitectura
+
+| TAREFA | COMPLETADO | DESCRICAO |
+|-|-|-|
+|Remover o node que é responsavel pelo ansible | | Quem trata disso é a Runner [FLUXO](#FLOW) | 
+|||
+|||
+|||
+|||
+|||
+|||
+|||
+|||
+
+
+
+
+### Flow
+
+What does it exist currently:
+
+<img src="docs/images/original_flow.jng" width=200 />
+
+
+There is a responsible machine that is initalized by the terraform and it receaves all the terror state files and runs the task. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## 1. Organização do Código
 
 ### Estrutura de Ficheiros

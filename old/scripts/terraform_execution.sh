@@ -9,6 +9,12 @@ DEPLOY_PLATFORM=$4
 TERRAFORM_ACTION=$5
 DESTROY_ACTION=$6
 
+
+terraform_output() {
+    BUFFER=$(terraform output -json)
+    echo "$BUFFER" | jq '.' > output_info.json
+}
+
 validate_required_params() {
     if [ -z "$AWS_ACCESS_KEY_ID" ]; then
         echo "ERROR: AWS_ACCESS_KEY_ID is not set"
@@ -134,6 +140,9 @@ main() {
     
     if [ "$TERRAFORM_ACTION" == "apply" ]; then
         run_terraform_apply
+
+
+        terraform_output
     else
         echo "OK: Terraform plan completed successfully (NOT APPLIED)"
     fi
