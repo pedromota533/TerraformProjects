@@ -8,14 +8,43 @@ set -euo pipefail
 
 echo "Installing GitHub Runner Dependencies..."
 
-# Update system packages
-sudo apt-get update -y -q >/dev/null 2>&1
+# Wait for cloud-init to finish (prevents apt lock on fresh EC2 instances)
+echo "Waiting for cloud-init to complete..."
+if ! timeout 300 /bin/bash -c 'until [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 1; done'; then
+    echo "WARNING: Timed out waiting for cloud-init, proceeding anyway..."
+fi
 
-# Install essential tools quietly
-sudo apt-get install -y -q curl tar git coreutils >/dev/null 2>&1
+# Wait for apt locks to be released
+echo "Checking for apt locks..."
+lock_wait_count=0
+while fuser /var/lib/dpkg/lock-frontend 2>&1 || fuser /var/lib/apt/lists/lock 2>&1; do
+    echo "Waiting for other apt processes to finish... (attempt $((++lock_wait_count)))"
+    if [ $lock_wait_count -gt 60 ]; then
+        echo "ERROR: Timed out waiting for apt locks after 5 minutes"
+        exit 1
+    fi
+    sleep 5
+done
+
+# Update system packages (without sudo since we're already root via become: yes)
+echo "Updating package lists..."
+if ! apt-get update -y; then
+    echo "ERROR: Failed to update package lists"
+    exit 1
+fi
+
+# Install essential tools
+echo "Installing essential packages..."
+if ! apt-get install -y curl tar git coreutils; then
+    echo "ERROR: Failed to install essential packages"
+    exit 1
+fi
 
 # Install additional useful tools (optional, don't fail if unavailable)
-sudo apt-get install -y -q jq wget unzip >/dev/null 2>&1 || true
+echo "Installing optional packages..."
+if ! apt-get install -y jq wget unzip; then
+    echo "WARNING: Some optional packages failed to install (non-critical)"
+fi
 
 # Verify critical commands
 commands_to_check=(curl tar git sha256sum)
