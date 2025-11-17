@@ -18,17 +18,48 @@ This project provisions EC2 instances and automatically configures them as GitHu
 - **GitHub Token** - Runner registration token from your repository
 - **SSH Key** - For EC2 instance access
 
+## Prerequisites Setup
+
+### 1. Configure AWS Credentials
+
+Choose one of the following methods:
+
+**Option A: Environment Variables**
+```bash
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+```
+
+**Option B: AWS CLI Configuration** (recommended)
+```bash
+aws configure
+# Enter your AWS Access Key ID, Secret Access Key, region, and output format
+```
+
+This creates `~/.aws/credentials` file that Terraform will automatically use.
+
+### 2. Set GitHub Token
+
+```bash
+export TF_VAR_github_token="your-github-token"
+```
+
+To get a GitHub token:
+1. Go to your repository → Settings → Actions → Runners
+2. Click "New self-hosted runner"
+3. Copy the token from the configuration command
+
 ## Quick Start
 
 ```bash
 # 1. Initialize and provision infrastructure
 ./run.sh init
-./run.sh apply    # You'll be prompted for GitHub token
+./run.sh apply    # Uses TF_VAR_github_token from environment
 
-# 2. Configure runners (if token not provided in step 1)
-vim config/config.ini    # Set github_runner_token
+# Or run the full workflow with confirmation prompts
+./run.sh full
 
-# 3. Deploy runners with Ansible
+# 2. Deploy runners with Ansible
 cd ansible_enviroment
 ./run
 ```

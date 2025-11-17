@@ -17,7 +17,7 @@ output "runner_instance_ids" {
 
 output "key_pair_name" {
   description = "SSH key pair name"
-  value       = data.aws_key_pair.runner.key_name
+  value       = aws_key_pair.runner.key_name
 }
 
 output "ami_info" {
