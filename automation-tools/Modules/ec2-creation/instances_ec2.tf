@@ -22,7 +22,7 @@ resource "aws_instance" "runner" {
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.runner.id]
-  key_name               = data.aws_key_pair.runner.key_name
+  key_name               = aws_key_pair.runner.key_name
   user_data              = local.user_data_script
 
   tags = {

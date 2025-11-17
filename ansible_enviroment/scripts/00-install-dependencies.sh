@@ -8,11 +8,6 @@ set -euo pipefail
 
 echo "Installing GitHub Runner Dependencies..."
 
-# Wait for cloud-init to finish (prevents apt lock on fresh EC2 instances)
-echo "Waiting for cloud-init to complete..."
-if ! timeout 300 /bin/bash -c 'until [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 1; done'; then
-    echo "WARNING: Timed out waiting for cloud-init, proceeding anyway..."
-fi
 
 # Wait for apt locks to be released
 echo "Checking for apt locks..."

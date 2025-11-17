@@ -1,0 +1,41 @@
+{
+  "runners_config": {
+    "runner_version": "2.329.0",
+    "runner_platform": "linux-x64",
+    "runner_sha256": "194f1e1e4bd02f80b7e9633fc546084d8d4e19f3928a324d512ea53430102e1d",
+    "vms": [
+      {
+        "base_path": "/home/ubuntu/actions-runner",
+        "organizations": [
+          {
+            "name": "pedromota-organizationtest",
+            "github_url": "https://github.com/pedromota-organizationtest",
+            "token": "${GITHUB_TOKEN_ORG}",
+            "runner_groups": [
+              {
+                "name": "Default",
+                "github_name": "default",
+                "instances": 1
+              },
+              {
+                "name": "runner-group-one",
+                "github_name": "group-one",
+                "instances": 0
+              },
+              {
+                "name": "runner-group-two",
+                "github_name": "group-two",
+                "instances": 0
+              },
+              {
+                "name": "runner-security-memory-leak-checks",
+                "github_name": "security-memleak",
+                "instances": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

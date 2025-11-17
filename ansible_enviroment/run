@@ -2,9 +2,11 @@
 
 set -e  # Exit on error
 
-INVENTORY_LOCATION="../config/config.ini"
+# Accept config path as argument, default to ../config/config.ini
+INVENTORY_LOCATION="${1:-../config/config.ini}"
 
 echo "==> Validating configuration..."
+echo "Using config: $INVENTORY_LOCATION"
 
 # Check if config.ini exists
 if [ ! -f "$INVENTORY_LOCATION" ]; then
@@ -64,7 +66,7 @@ echo "==> Running Ansible playbook..."
 echo ""
 
 # Run the playbook
-ansible-playbook -i "$INVENTORY_LOCATION" ./run-scripts.yml
+ansible-playbook -i "$INVENTORY_LOCATION" ./playbook.yml
 PLAYBOOK_EXIT=$?
 
 echo ""
