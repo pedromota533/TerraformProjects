@@ -1,0 +1,67 @@
+---
+- name: Setup GitHub Runners on Azure VMs
+  hosts: runners-azure
+  vars:
+    ansible_user: ubuntu
+    github_runner_token: "{{ lookup('env', 'GITHUB_TOKEN_ORG') }}"
+
+  tasks:
+    # Step 1: Copy dependencies (JSON config files, etc.) - as root
+    - name: Create dependencies directory on remote hosts
+      file:
+        path: /tmp/dependencies
+        state: directory
+        mode: '0755'
+      become: yes
+
+    - name: Copy all dependency files to remote hosts
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/dependencies/{{ item | basename }}"
+        mode: '0644'
+      with_fileglob:
+        - "{{ playbook_dir }}/dependencies/*"
+      become: yes
+
+    # Step 2: Copy scripts to remote hosts - as root
+    - name: Create scripts directory on remote hosts
+      file:
+        path: /tmp/scripts
+        state: directory
+        mode: '0755'
+      become: yes
+
+    - name: Copy all setup scripts to remote hosts
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/scripts/{{ item | basename }}"
+        mode: '0755'  # Make scripts executable
+      with_fileglob:
+        - "{{ playbook_dir }}/scripts/*.sh"
+      become: yes
+
+    # Step 3: Install system dependencies - as root
+    - name: Execute 00-install-dependencies.sh
+      shell: /tmp/scripts/00-install-dependencies.sh
+      register: install_deps_result
+      args:
+        executable: /bin/bash
+      become: yes
+
+    - name: Show install-dependencies output
+      debug:
+        var: install_deps_result.stdout_lines
+
+    # Step 4: Setup runners - as ubuntu user (NOT root!)
+    - name: Execute 11-setup_runners.sh with config file
+      shell: /tmp/scripts/11-setup_runners.sh /tmp/dependencies/runners_config.json
+      register: setup_runners_result
+      args:
+        executable: /bin/bash
+      become: no
+      environment:
+        GITHUB_TOKEN_ORG: "{{ github_runner_token }}"
+
+    - name: Show setup-runners output
+      debug:
+        var: setup_runners_result.stdout_lines

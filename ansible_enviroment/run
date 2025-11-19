@@ -2,17 +2,71 @@
 
 set -e  # Exit on error
 
-# Accept config path as argument, default to ../config/config.ini
-INVENTORY_LOCATION="${1:-../config/config.ini}"
+# Parse arguments
+PROVIDER=""  # No default - must be explicitly set
+INVENTORY_LOCATION="../config/config.ini"  # Default config location
 
-echo "==> Validating configuration..."
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --aws)
+            PROVIDER="aws"
+            shift
+            ;;
+        --azure)
+            PROVIDER="azure"
+            shift
+            ;;
+        *)
+            # If not a flag, treat as config path
+            INVENTORY_LOCATION="$1"
+            shift
+            ;;
+    esac
+done
+
+# Validate that a provider was specified
+if [ -z "$PROVIDER" ]; then
+    echo "ERROR: No platform specified"
+    echo "Usage: $0 --aws|--azure [CONFIG_PATH]"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --aws                          # Deploy to AWS EC2 instances"
+    echo "  $0 --azure                        # Deploy to Azure VMs"
+    echo "  $0 --aws /path/to/config.ini      # AWS with custom config"
+    echo "  $0 --azure /path/to/config.ini    # Azure with custom config"
+    exit 1
+fi
+
+# Set playbook and inventory group based on provider
+if [ "$PROVIDER" == "aws" ]; then
+    PLAYBOOK="./playbook.yml"
+    INVENTORY_GROUP="runners"
+else
+    PLAYBOOK="./playbook-azure.yml"
+    INVENTORY_GROUP="runners-azure"
+fi
+
+echo "==> Validating configuration for $PROVIDER runners..."
 echo "Using config: $INVENTORY_LOCATION"
+echo "Using playbook: $PLAYBOOK"
 
 # Check if config.ini exists
 if [ ! -f "$INVENTORY_LOCATION" ]; then
     echo "ERROR: Configuration file not found at $INVENTORY_LOCATION"
-    echo "Please run Terraform to generate the configuration first."
+    if [ "$PROVIDER" == "aws" ]; then
+        echo "Please run Terraform to generate the configuration first."
+    fi
     exit 1
+fi
+
+# Check if the appropriate inventory group exists
+if [ "$PROVIDER" == "azure" ]; then
+    if ! grep -q "^\[$INVENTORY_GROUP\]" "$INVENTORY_LOCATION"; then
+        echo "ERROR: [$INVENTORY_GROUP] section not found in $INVENTORY_LOCATION"
+        echo "Please add Azure runner configuration to the inventory file."
+        exit 2
+    fi
 fi
 
 # Check if github_runner_token is set
@@ -21,7 +75,7 @@ TOKEN=$(grep "^github_runner_token=" "$INVENTORY_LOCATION" | cut -d'=' -f2 | tr 
 if [ -z "$TOKEN" ]; then
     echo "ERROR: github_runner_token is empty in $INVENTORY_LOCATION"
     echo "Please set the GitHub runner token before running the playbook."
-    exit 2
+    exit 3
 fi
 
 echo "✓ Configuration validated"
@@ -29,7 +83,7 @@ echo "✓ Configuration validated"
 # Check if python3 is installed
 if ! command -v python3 &> /dev/null; then
     echo "ERROR: python3 is not installed"
-    exit 3
+    exit 4
 fi
 
 echo "==> Setting up Python environment..."
@@ -65,8 +119,8 @@ echo ""
 echo "==> Running Ansible playbook..."
 echo ""
 
-# Run the playbook
-ansible-playbook -i "$INVENTORY_LOCATION" ./playbook.yml
+# Run the appropriate playbook
+ansible-playbook -i "$INVENTORY_LOCATION" "$PLAYBOOK"
 PLAYBOOK_EXIT=$?
 
 echo ""
