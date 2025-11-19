@@ -69,16 +69,26 @@ if [ "$PROVIDER" == "azure" ]; then
     fi
 fi
 
-# Check if github_runner_token is set
-TOKEN=$(grep "^github_runner_token=" "$INVENTORY_LOCATION" | cut -d'=' -f2 | tr -d '[:space:]')
+# Check if github_runner_token is set in the appropriate section
+# For Azure, read from [runners-azure:vars] section, for AWS from [runners:vars] section
+if [ "$PROVIDER" == "azure" ]; then
+    # Read token from [runners-azure:vars] section
+    TOKEN=$(sed -n '/^\[runners-azure:vars\]/,/^\[/p' "$INVENTORY_LOCATION" | grep '^github_runner_token=' | cut -d'=' -f2 | tr -d '[:space:]')
+else
+    # Read token from [runners:vars] section
+    TOKEN=$(sed -n '/^\[runners:vars\]/,/^\[/p' "$INVENTORY_LOCATION" | grep '^github_runner_token=' | cut -d'=' -f2 | tr -d '[:space:]')
+fi
 
 if [ -z "$TOKEN" ]; then
-    echo "ERROR: github_runner_token is empty in $INVENTORY_LOCATION"
-    echo "Please set the GitHub runner token before running the playbook."
+    echo "ERROR: github_runner_token is empty in $INVENTORY_LOCATION for $PROVIDER"
+    echo "Please set the GitHub runner token in the appropriate section before running the playbook."
     exit 3
 fi
 
 echo "✓ Configuration validated"
+
+# Export token as environment variable for Ansible
+export GITHUB_TOKEN_ORG="$TOKEN"
 
 # Check if python3 is installed
 if ! command -v python3 &> /dev/null; then
